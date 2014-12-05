@@ -5,10 +5,6 @@ open System.IO
 open VPPListBuddy.VPP
 open VPPListBuddy.XLS
 
-type AllocationError = delegate of int -> unit
-type DirectoryChooser = delegate of unit -> string
-type PartitionMaker = delegate of unit -> list<string * int>
-
 type public PartitionEntry(name:string,allocation:int) =
     let mutable name = name
     let mutable allocation = allocation
@@ -32,6 +28,14 @@ type public PartitionEntry(name:string,allocation:int) =
     member this.Modified =  modified.Publish
     [<CLIEvent>]
     member this.Deleted =  deleted.Publish
+
+
+type AllocationError = delegate of int -> unit
+type DirectoryChooser = delegate of unit -> string
+type PartitionMaker = delegate of unit -> list<string * int>
+type FileError = delegate of string -> unit
+type PartitionError = delegate of PartitionEntry -> unit
+
 
 type public PartitionWorkflow (VPP:VPP) = 
 
@@ -72,20 +76,22 @@ type public PartitionWorkflow (VPP:VPP) =
         match totalavailable - wantedamount with
         | 0 -> Some(allocatecodes [] (aslist allocations) vpp.VPPCodes |> tovpps vpp)
         | _ -> None
-
-    let write directory vpps = vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directory,vpp.FileName)))
+    //change so you can modify extension
+    let write directory vpps = vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directory,vpp.FileName + ".xls")))
    
     let partitions = Collections.Generic.List<PartitionEntry>()
-    let partitionchanged = new Event<PartitionEntry>()
+
+    //Events
+    let partitionchanged = new Event<PartitionEntry>()//DelegateEvent<PartitionError>()
     let overallocation = new Event<int>()
     let onunderallocation = new Event<int>()
     let duplicatenames = new Event<PartitionEntry>()
 
-    member this.VPP = VPP
-
     [<CLIEvent>] member this.OnDuplicateName = duplicatenames.Publish
     [<CLIEvent>] member this.OnOverAllocation = overallocation.Publish
     [<CLIEvent>] member this.OnUnderAllocation = onunderallocation.Publish
+
+    member this.VPP = VPP
 
     member this.Add(entry:PartitionEntry) =
         let isduplicate = partitions |> Seq.exists(fun pe -> pe.Name = entry.Name) 
@@ -118,15 +124,15 @@ type public PartitionWorkflow (VPP:VPP) =
 
     member this.Measure(onexact) =
         match measure' this.VPP partitions with
-        | Over as num -> overallocation.Trigger(num)
-        | Under as num -> onunderallocation.Trigger(num)
+        | Over as num -> overallocation.Trigger(abs num)
+        | Under as num -> onunderallocation.Trigger(abs num)
         | Exact -> do onexact
     
-    member this.Partition(directorychooser:DirectoryChooser,onerror) : unit =
+    member this.Partition(directorypath,onerror:FileError) =
         match measure' this.VPP partitions with
-        | Over as num -> overallocation.Trigger(num)
-        | Under as num -> onunderallocation.Trigger(num)
+        | Over as num -> overallocation.Trigger(abs num)
+        | Under as num -> onunderallocation.Trigger(abs num)
         | Exact -> 
             match partition partitions this.VPP with 
-            | Some(vpps) -> write (directorychooser.Invoke()) vpps 
-            | None -> do onerror()
+            | Some(vpps) -> write directorypath vpps 
+            | None -> do onerror.Invoke(directorypath)

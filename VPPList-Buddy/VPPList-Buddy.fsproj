@@ -51,8 +51,13 @@
     <Compile Include="XLS.fs" />
     <Compile Include="PartitionWorkflow.fs" />
     <Compile Include="OpenXLSWorkflow.fs" />
+    <None Include="Resources\TestVPP.xls" />
+    <None Include="Debug.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
   </ItemGroup>
 </Project>

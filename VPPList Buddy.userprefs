@@ -1,13 +1,29 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="VPPList-Buddy/PartitionWorkflow.fs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="UI-Console/Program.fs">
     <Files>
-      <File FileName="VPPList-Buddy/PartitionWorkflow.fs" Line="26" Column="26" />
-      <File FileName="VPPList-Buddy/OpenXLSWorkflow.fs" Line="21" Column="21" />
+      <File FileName="UI-Console/Program.fs" Line="9" Column="9" />
+      <File FileName="VPPList-Buddy/Debug.fs" Line="15" Column="15" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <MonoDevelop.Ide.ItemProperties.UI-Console>
+    <MonoDevelop.Ide.CustomExecutionModes>
+      <Data Name="Test Single Write (Custom)" Id="1cccc7d2-484a-4d46-9d58-0d87da86597e" ModeId="1cccc7d2-484a-4d46-9d58-0d87da86597e">
+        <CommandData>
+          <Item Key="MonoDevelop.Ide.Execution.CustomArgsCustomizer">
+            <Value Arguments="'/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/TestVPP.xls' '/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/'" ctype="CustomArgsExecutionModeData">
+              <EnvironmentVariables />
+            </Value>
+          </Item>
+          <Item Key="MonoDevelop.Ide.Execution.MonoExecutionCustomizer">
+            <Value ctype="MonoExecutionParameters" />
+          </Item>
+        </CommandData>
+      </Data>
+    </MonoDevelop.Ide.CustomExecutionModes>
+  </MonoDevelop.Ide.ItemProperties.UI-Console>
 </Properties>
