@@ -1,9 +1,9 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="UI-Console/Program.fs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="VPPList-Buddy/Debug.fs">
     <Files>
-      <File FileName="UI-Console/Program.fs" Line="9" Column="9" />
-      <File FileName="VPPList-Buddy/Debug.fs" Line="15" Column="15" />
+      <File FileName="UI-GTK/MainWindow.cs" Line="3" Column="3" />
+      <File FileName="VPPList-Buddy/Debug.fs" Line="5" Column="5" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
@@ -13,6 +13,18 @@
   <MonoDevelop.Ide.ItemProperties.UI-Console>
     <MonoDevelop.Ide.CustomExecutionModes>
       <Data Name="Test Single Write (Custom)" Id="1cccc7d2-484a-4d46-9d58-0d87da86597e" ModeId="1cccc7d2-484a-4d46-9d58-0d87da86597e">
+        <CommandData>
+          <Item Key="MonoDevelop.Ide.Execution.CustomArgsCustomizer">
+            <Value Arguments="'/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/TestVPP.xls' '/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/'" ctype="CustomArgsExecutionModeData">
+              <EnvironmentVariables />
+            </Value>
+          </Item>
+          <Item Key="MonoDevelop.Ide.Execution.MonoExecutionCustomizer">
+            <Value ctype="MonoExecutionParameters" />
+          </Item>
+        </CommandData>
+      </Data>
+      <Data Name="Test Case" Id="2dcec976-bf57-4748-a683-77dcaba9621b" ModeId="Default">
         <CommandData>
           <Item Key="MonoDevelop.Ide.Execution.CustomArgsCustomizer">
             <Value Arguments="'/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/TestVPP.xls' '/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/'" ctype="CustomArgsExecutionModeData">

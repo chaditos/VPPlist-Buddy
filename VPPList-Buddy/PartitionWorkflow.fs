@@ -1,4 +1,4 @@
-﻿namespace VPPListBuddy
+﻿namespace VPPListBuddy.Workflow
 
 open System
 open System.IO

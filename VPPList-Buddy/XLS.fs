@@ -1,4 +1,4 @@
-﻿module internal VPPListBuddy.XLS
+﻿module VPPListBuddy.XLS
 
 open System
 open System.IO
