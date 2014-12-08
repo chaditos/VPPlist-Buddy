@@ -1,4 +1,4 @@
-﻿#I "bin/Debug/"
+﻿#I "../bin/Debug/"
 #r "ExcelLibrary.dll"
 #r "VPPList-Buddy.dll"
 
