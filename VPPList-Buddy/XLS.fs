@@ -6,23 +6,24 @@ open VPPListBuddy.VPP
 open VPPListBuddy.IO
 open ExcelLibrary.SpreadSheet
 
-let xlsreadcell' (sheet : Worksheet) (index : int * int) =
-    index |> fun (h,v) -> sheet.Cells.Item(h,v)
 let xlsreadcell (sheet : Worksheet) (index : int * int) =
-    index |> fun (h,v) -> sheet.Cells.Item(h,v).Value
+    index |> fun (h,v) -> sheet.Cells.Item(h,v)
 
-let xlsreadcelltext (sheet : Worksheet) (index : int * int) = //Works on the bases that VPP Sheets only contain text values
-    match (xlsreadcell' sheet index).StringValue with
+let xlstrystring (sheet : Worksheet) (index : int * int) =
+    match (xlsreadcell sheet index).StringValue with
     | text when String.IsNullOrWhiteSpace(text) -> None
     | text -> Some(text)
 
-let xlsreadcelltext2 (index : int * int) (sheet : Worksheet) = xlsreadcelltext sheet index
+let xlstryint ws = 
+    xlstrystring ws >> function
+    | Some(str) -> 
+        match str |> Int32.TryParse with
+        | (true,i) -> Some(i)
+        | (false,_) -> None
+    | None -> None
 
-let xlswritecell (sheet : Worksheet) (index : int * int) (obj:Object)  =
-    do index |> fun (h,v) -> sheet.Cells.Item(h,v) <- new Cell(obj)
-
-let xlswritecell2 (index : int * int) (obj:Object) (sheet : Worksheet)   =
-    xlswritecell sheet index obj
+let xlswritecell (sheet : Worksheet) (index : int * int) (obj:Object)  = 
+    do index |> fun (h,v) -> sheet.Cells.Item(h,v) <- new Cell(obj) //How safe is this?
 
 let xlswritetext (sheet : Worksheet) (index : int * int) (text:string) =
     xlswritecell sheet index text
@@ -30,7 +31,7 @@ let xlswritetext (sheet : Worksheet) (index : int * int) (text:string) =
 let xlsworksheet name =
     new Worksheet(name)
 
-let xlsopenworkbook (path : string) =
+let xlsopenfile (path : string) =
     try
         Some(path |> Workbook.Load)
     with
@@ -40,9 +41,9 @@ let attachsheet sheet (wb : Workbook) =
     do wb.Worksheets.Add(sheet)
     wb
 
-
 let xlssaveworkbook (path : string) (wb : Workbook)  = 
     wb.Save(path)
+    wb
 
 let xlssaveworksheet (path : string) (ws : Worksheet) =
     let wb = Workbook()
@@ -50,7 +51,6 @@ let xlssaveworksheet (path : string) (ws : Worksheet) =
         wb.Worksheets.Add(ws)
         wb.Save(path)
 
-let xlsopenfile = xlsopenworkbook
 let xlstestempty (xls: Workbook) = if xls.Worksheets.Count = 0 then None else Some(xls)
 let xlsextractsheet (xls : Workbook) sheetindex =
     match xls.Worksheets.Count , sheetindex with
@@ -58,16 +58,8 @@ let xlsextractsheet (xls : Workbook) sheetindex =
     | (_,index) when 0 > index -> None
     | (sheetcount,index) when sheetcount <= index ->  None
     | _ -> Some(xls.Worksheets.Item(sheetindex))
-let xlsextractsheet' sheetindex xls = xlsextractsheet xls sheetindex
 
-let xlscellreader = xlsreadcelltext 
-let xlscellintreader ws = 
-    xlscellreader ws >> function
-    | Some(str) -> 
-        match str |> Int32.TryParse with
-        | (true,i) -> Some(i)
-        | (false,_) -> None
-    | None -> None
+let xlsextractsheet' sheetindex xls = xlsextractsheet xls sheetindex
 
 let mapvppdatacell (spreadsheet : VPP) =
     let vppdata = [
@@ -116,14 +108,12 @@ let parsevppspreadsheet cellintreader (cellreader :  int * int -> string option)
     extractinfo blankspreadsheet |> extractcodes |> verify
 
 let xlsparsevpp worksheet =
-    let celltextreader = xlscellreader worksheet
-    let cellintreader = xlscellintreader worksheet
+    let celltextreader = xlstrystring worksheet
+    let cellintreader = xlstryint worksheet
     parsevppspreadsheet cellintreader celltextreader
-
-let xlscellwriter = xlswritetext
 
 let savevpptoxls vpp path =
     let xlsserializer = xlssaveworksheet path
     let write = 
-        fun xlsserializer -> savespreadsheet (Worksheet("Sheet1")) xlscellwriter xlsserializer mapvppdatacell
+        fun xlsserializer -> savespreadsheet (Worksheet("Sheet1")) xlswritetext xlsserializer mapvppdatacell
     write xlsserializer vpp

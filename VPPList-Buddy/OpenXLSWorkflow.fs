@@ -36,7 +36,7 @@ type OpenXLSWorkFlow() =
     let parsevppsheet = xlsparsevpp >> (fun vpp -> match vpp with | Some _ -> vpp | None -> (do oninvalidvpp.Invoke()); None)
 
     let parsepartitionsheet vppspreadsheet =
-        let read, readint = vppspreadsheet |> xlscellreader, vppspreadsheet |> xlscellintreader
+        let read, readint = vppspreadsheet |> xlstrystring, vppspreadsheet |> xlstryint
         let rec readlines start acc =
             (start, 0, start, 1)
             |> fun (v1, h1, v2, h2) ->

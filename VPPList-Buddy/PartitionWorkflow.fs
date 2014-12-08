@@ -12,6 +12,11 @@ type public PartitionEntry(name:string,allocation:int) =
     let modified = new Event<PartitionEntry>()
     let deleted = new Event<PartitionEntry>()
 
+    [<CLIEvent>]
+    member this.Modified =  modified.Publish
+    [<CLIEvent>]
+    member this.Deleted =  deleted.Publish
+
     member this.Name
         with get() = name
         and set(value) = 
@@ -24,10 +29,6 @@ type public PartitionEntry(name:string,allocation:int) =
             modified.Trigger(this)
     member this.Delete() =
         deleted.Trigger this
-    [<CLIEvent>]
-    member this.Modified =  modified.Publish
-    [<CLIEvent>]
-    member this.Deleted =  deleted.Publish
 
 
 type AllocationError = delegate of int -> unit
