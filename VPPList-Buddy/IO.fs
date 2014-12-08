@@ -1,4 +1,4 @@
-﻿module VPPListBuddy.IO
+﻿module internal VPPListBuddy.IO
 
 open System
 open System.IO
