@@ -61,11 +61,12 @@
     <Compile Include="VPP.fs" />
     <Compile Include="IO.fs" />
     <Compile Include="XLS.fs" />
-    <Compile Include="PartitionWorkflow.fs" />
-    <Compile Include="OpenXLSWorkflow.fs" />
     <None Include="Resources\Incorrect Totals.xls" />
     <None Include="Resources\Sample.xls" />
     <None Include="Resources\Debug.fsx" />
+    <None Include="PartitionWorkflow.fs" />
+    <None Include="OpenXLSWorkflow.fs" />
+    <None Include="Resources\Debug NPOI.fsx" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>

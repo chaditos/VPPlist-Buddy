@@ -4,7 +4,42 @@ open System
 open System.IO
 open VPPListBuddy.VPP
 open VPPListBuddy.IO
+open NPOI.HSSF
+open NPOI.HSSF.UserModel
+open NPOI.SS.UserModel
 
+let xlsopenfile path =
+    use fs = path |> File.OpenRead
+    try
+        Some(HSSFWorkbook(fs))
+    with
+    | ex  -> None
+
+let xlstestempty (xls: HSSFWorkbook) = if xls.NumberOfSheets = 0 then None else Some(xls)
+
+let attachsheet sheet (wb : HSSFWorkbook) =
+    do wb.Add(sheet)
+    wb
+
+let xlsworksheet name = //Not specifically an xls worksheet, but doesn't matter for this application
+    let wb = new HSSFWorkbook()
+    let ws = wb.CreateSheet() //All sheets need to be attached to a workbook I suppose?
+    do wb.SetSheetName(0,name)
+    ws
+
+
+(*
+let xlsreadcell (sheet : ISheet) (index : int * int) =
+    index |> fun (h,v) -> sheet.  //sheet.Cells.Item(h,v)
+
+let xlssaveworksheet (path : string) (ws : Worksheet) =
+    let wb = Workbook()
+    do 
+        wb.Worksheets.Add(ws)
+        wb.Save(path)
+*)
+
+(*
 let xlsreadcell (sheet : Worksheet) (index : int * int) =
     index |> fun (h,v) -> sheet.Cells.Item(h,v)
 
@@ -27,30 +62,10 @@ let xlswritecell (sheet : Worksheet) (index : int * int) (obj:Object)  =
 let xlswritetext (sheet : Worksheet) (index : int * int) (text:string) =
     xlswritecell sheet index text
 
-let xlsworksheet name =
-    new Worksheet(name)
-
-let xlsopenfile (path : string) =
-    try
-        Some(path |> Workbook.Load)
-    with
-    | ex  -> None
-
-let attachsheet sheet (wb : Workbook) =
-    do wb.Worksheets.Add(sheet)
-    wb
-
 let xlssaveworkbook (path : string) (wb : Workbook)  = 
     wb.Save(path)
     wb
 
-let xlssaveworksheet (path : string) (ws : Worksheet) =
-    let wb = Workbook()
-    do 
-        wb.Worksheets.Add(ws)
-        wb.Save(path)
-
-let xlstestempty (xls: Workbook) = if xls.Worksheets.Count = 0 then None else Some(xls)
 let xlsextractsheet (xls : Workbook) sheetindex =
     match xls.Worksheets.Count , sheetindex with
     | (0,_) -> None
@@ -116,3 +131,4 @@ let savevpptoxls vpp path =
     let write = 
         fun xlsserializer -> savespreadsheet (Worksheet("Sheet1")) xlswritetext xlsserializer mapvppdatacell
     write xlsserializer vpp
+*)
