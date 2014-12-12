@@ -4,7 +4,6 @@ open System
 open System.IO
 open VPPListBuddy.VPP
 open VPPListBuddy.IO
-open ExcelLibrary.SpreadSheet
 
 let xlsreadcell (sheet : Worksheet) (index : int * int) =
     index |> fun (h,v) -> sheet.Cells.Item(h,v)
