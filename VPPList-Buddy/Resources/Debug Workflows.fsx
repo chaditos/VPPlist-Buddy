@@ -1,5 +1,5 @@
-﻿#I "../bin/Debug/"
-#r "ExcelLibrary.dll"
+﻿#load "Debug NPOI.fsx"
+#I "../bin/Debug/"
 #r "VPPList-Buddy.dll"
 
 open System

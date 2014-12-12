@@ -27,26 +27,14 @@ let xlsworksheet name = //Not specifically an xls worksheet, but doesn't matter 
     do wb.SetSheetName(0,name)
     ws
 
+let xlsreadcell (sheet : ISheet) (index : int * int) = 
+    index |> fun (v,h) -> sheet.GetRow(v).GetCell(h)
 
-(*
-let xlsreadcell (sheet : ISheet) (index : int * int) =
-    index |> fun (h,v) -> sheet.  //sheet.Cells.Item(h,v)
-
-let xlssaveworksheet (path : string) (ws : Worksheet) =
-    let wb = Workbook()
-    do 
-        wb.Worksheets.Add(ws)
-        wb.Save(path)
-*)
-
-(*
-let xlsreadcell (sheet : Worksheet) (index : int * int) =
-    index |> fun (h,v) -> sheet.Cells.Item(h,v)
-
-let xlstrystring (sheet : Worksheet) (index : int * int) =
-    match (xlsreadcell sheet index).StringValue with
-    | text when String.IsNullOrWhiteSpace(text) -> None
-    | text -> Some(text)
+let xlstrystring (sheet : ISheet) (index : int * int) =
+    match (xlsreadcell sheet index) with
+    | null -> None
+    | cell when String.IsNullOrWhiteSpace(cell.ToString()) -> None //Method StringCellValue throws exception on numeric values 
+    | cell -> Some(cell.ToString())
 
 let xlstryint ws = 
     xlstrystring ws >> function
@@ -55,6 +43,25 @@ let xlstryint ws =
         | (true,i) -> Some(i)
         | (false,_) -> None
     | None -> None
+
+(*
+
+let xlsextractsheet (xls : HSSFWorkbook) sheetindex =
+    match xls.Worksheets.Count , sheetindex with
+    | (0,_) -> None
+    | (_,index) when 0 > index -> None
+    | (sheetcount,index) when sheetcount <= index ->  None
+    | _ -> Some(xls.Worksheets.Item(sheetindex))
+
+let xlsextractsheet' sheetindex xls = xlsextractsheet xls sheetindex
+let xlssaveworksheet (path : string) (ws : Worksheet) =
+    let wb = Workbook()
+    do 
+        wb.Worksheets.Add(ws)
+        wb.Save(path)
+*)
+
+(*
 
 let xlswritecell (sheet : Worksheet) (index : int * int) (obj:Object)  = 
     do index |> fun (h,v) -> sheet.Cells.Item(h,v) <- new Cell(obj) //How safe is this?
@@ -65,15 +72,6 @@ let xlswritetext (sheet : Worksheet) (index : int * int) (text:string) =
 let xlssaveworkbook (path : string) (wb : Workbook)  = 
     wb.Save(path)
     wb
-
-let xlsextractsheet (xls : Workbook) sheetindex =
-    match xls.Worksheets.Count , sheetindex with
-    | (0,_) -> None
-    | (_,index) when 0 > index -> None
-    | (sheetcount,index) when sheetcount <= index ->  None
-    | _ -> Some(xls.Worksheets.Item(sheetindex))
-
-let xlsextractsheet' sheetindex xls = xlsextractsheet xls sheetindex
 
 let mapvppdatacell (spreadsheet : VPP) =
     let vppdata = [
