@@ -9,7 +9,7 @@ open VPPListBuddy.VPP
 open VPPListBuddy.IO
 open VPPListBuddy.XLS
 open VPPListBuddy.Workflow
-open ExcelLibrary.SpreadSheet
+
 
 let assetspath = __SOURCE_DIRECTORY__ 
 let pathgoodvpp = Path.Combine(assetspath,"Sample.xls")
@@ -64,10 +64,5 @@ let testpartitioner() =
         pw.Add(new PartitionEntry("B128",90))
         pw.Add(new PartitionEntry("B129",10))
         pw.Partition(assetspath,fun path -> printfn "Could not write to %s" path)
-
-let xls() =
-    xlsopenfile pathxlstemplate 
-    |> Option.bind(fun xls -> xlsextractsheet xls 0)
-    |> Option.iter(fun template -> savevpptoxlsfromtemplate template (randomvpp()) (Path.Combine(assetspath,"templatetest.xls")))
 
   

@@ -3,6 +3,7 @@
   <MonoDevelop.Ide.Workbench ActiveDocument="VPPList-Buddy/XLS.fs">
     <Files>
       <File FileName="VPPList-Buddy/XLS.fs" Line="5" Column="5" />
+      <File FileName="VPPList-Buddy/Resources/Debug Workflows.fsx" Line="21" Column="21" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
@@ -26,7 +27,7 @@
       <Data Name="Test Case" Id="2dcec976-bf57-4748-a683-77dcaba9621b" ModeId="Default">
         <CommandData>
           <Item Key="MonoDevelop.Ide.Execution.CustomArgsCustomizer">
-            <Value Arguments="'/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/TestVPP.xls' '/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/'" ctype="CustomArgsExecutionModeData">
+            <Value Arguments="'/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/Sample.xls' '/Users/sbhsadmin/Projects/VPPList Buddy/VPPList-Buddy/Resources/Scratch/'" ctype="CustomArgsExecutionModeData">
               <EnvironmentVariables />
             </Value>
           </Item>

@@ -8,6 +8,8 @@ open NPOI.HSSF
 open NPOI.HSSF.UserModel
 open NPOI.SS.UserModel
 
+let xlstestempty (xls:IWorkbook) = if xls.NumberOfSheets = 0 then None else Some(xls)
+
 let xlsopenfile path =
     use fs = path |> File.OpenRead
     try
@@ -15,7 +17,6 @@ let xlsopenfile path =
     with
     | ex  -> None
 
-let xlstestempty (xls: IWorkbook) = if xls.NumberOfSheets = 0 then None else Some(xls)
 
 let attachsheet sheet (wb : IWorkbook) =
     do wb.Add(sheet)
@@ -28,13 +29,18 @@ let xlsworksheet name = //Not specifically an xls worksheet, but doesn't matter 
     ws
 
 let xlsreadcell (sheet : ISheet) (index : int * int) = 
-    index |> fun (v,h) -> sheet.GetRow(v).GetCell(h)
+    let (v,h) = fst index , snd index
+    match sheet.GetRow(v) with
+    | null -> None
+    | row -> match row.GetCell(h) with
+             | null -> None
+             | cell -> Some cell
 
 let xlstrystring (sheet : ISheet) (index : int * int) =
-    match (xlsreadcell sheet index) with
-    | null -> None
-    | cell when String.IsNullOrWhiteSpace(cell.ToString()) -> None //Method StringCellValue throws exception on numeric values 
-    | cell -> Some(cell.ToString())
+    match (xlsreadcell sheet index) with //Method StringCellValue throws exception on numeric values 
+    | Some cell when String.IsNullOrWhiteSpace(cell.ToString()) -> None 
+    | Some cell -> Some(cell.ToString())
+    | _ -> None
 
 let xlstryint ws = 
     xlstrystring ws >> function
@@ -108,22 +114,34 @@ let mapvppdatacell (spreadsheet : VPP) =
     //do index |> fun (h,v) -> sheet.Cells.Item(h,v) <- new Cell(obj) //How safe is this?*)
 
 let xlswritetext (sheet : ISheet) (index : int * int) (text:string) =
-    do index |> fun (v,h) -> sheet.CreateRow(v).CreateCell(h).SetCellValue(text)
+    let (v,h) = fst index , snd index
+    match sheet.GetRow(v) with
+    | null -> do sheet.CreateRow(v).CreateCell(h).SetCellValue(text)
+    | row -> match row.GetCell(h) with
+             | null -> do row.CreateCell(h).SetCellValue(text)
+             | cell -> do cell.SetCellValue(text)
 
+   
 
+let xlssaveworksheet (path : string) (ws : ISheet) =
+    use fs = File.Create(path)
+    do ws.Workbook.Write(fs)
+
+(* 
+The following fails, but should work? Not efficient, but should work
 let xlssaveworksheet (path : string) (ws : ISheet) =
     use fs = File.Create(path)
     let wb = new HSSFWorkbook()
     do 
         wb.Add(ws)
         wb.Write(fs)
-
-let xlssaveworkbook (path : string) (wb : HSSFWorkbook)  = 
+*)
+let xlssaveworkbook (path : string) (wb : IWorkbook)  = 
     use fs = File.Create(path)
     wb.Write(fs)
 
 let savevpptoxls vpp path =
     let xlsserializer = xlssaveworksheet path
     let write = 
-        fun xlsserializer -> savespreadsheet (xlsworksheet "sheet1") xlswritetext xlsserializer mapvppdatacell
+        fun xlsserializer -> savespreadsheet (xlsworksheet "Sheet1") xlswritetext xlsserializer mapvppdatacell
     write xlsserializer vpp
