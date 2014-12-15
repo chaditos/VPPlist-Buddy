@@ -48,6 +48,9 @@
       <SpecificVersion>False</SpecificVersion>
     </Reference>
     <Reference Include="Mono.Posix" />
+    <Reference Include="VPPList-Buddy">
+      <HintPath>..\VPPList-Buddy\bin\Release\VPPList-Buddy.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="gtk-gui\gui.stetic">

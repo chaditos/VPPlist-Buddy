@@ -32,6 +32,7 @@
     <Tailcalls>true</Tailcalls>
     <DefineConstants>
     </DefineConstants>
+    <DocumentationFile>bin\Release\VPPList-Buddy.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
