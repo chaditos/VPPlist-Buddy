@@ -5,51 +5,45 @@ open System.IO
 open VPPListBuddy.VPP
 open VPPListBuddy.XLS
 
+type private AllocationMeasurement = //Can't put inside PartitionWorkflow class?
+    | Over of Amount:int
+    | Under of Amount:int
+    | Exact
+
 type public PartitionEntry(name:string,allocation:int) =
     let mutable name = name
     let mutable allocation = allocation
-
-    let modified = new Event<PartitionEntry>()
-    let deleted = new Event<PartitionEntry>()
-
-    [<CLIEvent>]
-    member this.Modified =  modified.Publish
-    [<CLIEvent>]
-    member this.Deleted =  deleted.Publish
-
     member this.Name
         with get() = name
-        and set(value) = 
-            name <- value
-            modified.Trigger(this)
+        and set(value) = name <- value
     member this.Allocation
         with get() = allocation
-        and set(value) = 
-            allocation <- value
-            modified.Trigger(this)
-    member this.Delete() =
-        deleted.Trigger this
+        and set(value) = allocation <- value
 
+//.Net Friendly Events
+type AllocationErrorEventArgs(Amount:int) =
+    inherit EventArgs()
+    member this.Amount = Amount
+type AllocationError = delegate of obj * AllocationErrorEventArgs -> unit
 
-type AllocationError = delegate of int -> unit
-type DirectoryChooser = delegate of unit -> string
-type PartitionMaker = delegate of unit -> list<string * int>
-type FileError = delegate of string -> unit
-type PartitionError = delegate of PartitionEntry -> unit
+type PartitionErrorEventArgs(Entry:PartitionEntry) =
+    inherit EventArgs()
+    member this.PartitionEntry = Entry
+type PartitionError = delegate of obj * PartitionErrorEventArgs -> unit
 
-
+//Workflow 
 type public PartitionWorkflow (VPP:VPP) = 
+    let invaliddirchars = Set.ofArray (Path.GetInvalidPathChars())
+
+    let invalidfilechars = Set.ofArray (Path.GetInvalidPathChars())
 
     let measure' (vpp:VPP) (partitions:seq<PartitionEntry>)  =
         let totalcodes = vpp.CodesRemaining
         let allocatedcodes = partitions |> Seq.sumBy(fun p -> p.Allocation)
-        totalcodes - allocatedcodes
-
-    let (|Over|Under|Exact|) allocation =
-        match allocation with
-        | _ when allocation < 0 -> Over
-        | _ when allocation > 0 -> Under
-        | _ -> Exact
+        match totalcodes - allocatedcodes with
+        | amount when amount < 0 -> Over(amount)
+        | amount when amount > 0 -> Under(amount)
+        | _ -> Exact 
 
     let partition (allocations:seq<PartitionEntry>) (vpp:VPP) =
         let rec allocatecodes acc sections codes  = //unchecked
@@ -74,66 +68,52 @@ type public PartitionWorkflow (VPP:VPP) =
         let aslist (pe:seq<PartitionEntry>) = pe |> Seq.map(fun p -> p.Name , p.Allocation) |> Seq.toList
         let totalavailable = List.length vpp.AvailableVPPCodes
         let wantedamount = allocations |> Seq.sumBy(fun s -> s.Allocation)
+
         match totalavailable - wantedamount with
         | 0 -> Some(allocatecodes [] (aslist allocations) vpp.VPPCodes |> tovpps vpp)
         | _ -> None
-    //change so you can modify extension
-    let write directory vpps = vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directory,vpp.FileName + ".xls")))
    
     let partitions = Collections.Generic.List<PartitionEntry>()
 
     //Events
-    let partitionchanged = new Event<PartitionEntry>()//DelegateEvent<PartitionError>()
-    let overallocation = new Event<int>()
-    let onunderallocation = new Event<int>()
-    let duplicatenames = new Event<PartitionEntry>()
-
-    [<CLIEvent>] member this.OnDuplicateName = duplicatenames.Publish
-    [<CLIEvent>] member this.OnOverAllocation = overallocation.Publish
-    [<CLIEvent>] member this.OnUnderAllocation = onunderallocation.Publish
+    let onaddduplicatename = new Event<PartitionError,PartitionErrorEventArgs>()
+    let onaddinvalidfilename = new Event<PartitionError,PartitionErrorEventArgs>()
+    let onaddoverallocation = new Event<PartitionError,PartitionErrorEventArgs>()
+    let onpartitionunderallocation = new Event<AllocationError,AllocationErrorEventArgs>()
+    let onpartitionoverallocation = new Event<AllocationError,AllocationErrorEventArgs>()
+    [<CLIEvent>] member this.OnAddDuplicateName = onaddduplicatename.Publish
+    [<CLIEvent>] member this.OnAddInvalidFileName = onaddinvalidfilename.Publish
+    [<CLIEvent>] member this.OnAddOverAllocation = onaddoverallocation.Publish
+    [<CLIEvent>] member this.OnPartitionUnderAllocation = onpartitionunderallocation.Publish
+    [<CLIEvent>] member this.OnPartitionOverAllocation = onpartitionunderallocation.Publish
 
     member this.VPP = VPP
 
-    member this.Add(entry:PartitionEntry) =
-        let isduplicate = partitions |> Seq.exists(fun pe -> pe.Name = entry.Name) 
-        let allocmeasure = measure' this.VPP partitions
+    member this.Add(newentry) =
+        let isvalidname (entry:PartitionEntry) = 
+            match entry.Name.ToCharArray()|> Set.ofArray |> Set.intersect invalidfilechars |> Set.isEmpty with
+            | true -> Some entry
+            | false -> 
+                do onaddinvalidfilename.Trigger(this,new PartitionErrorEventArgs(entry))
+                None
+        let isduplicate (entry:PartitionEntry) = 
+            match partitions |> Seq.exists(fun curr -> curr.Name = entry.Name) with
+            | true -> 
+                do onaddduplicatename.Trigger(this,new PartitionErrorEventArgs(entry))
+                None
+            | false -> Some entry
+        let allocmeasure (entry:PartitionEntry) =
+            let wantedpartitions = Seq.singleton entry |> Seq.append partitions
+            match measure' this.VPP wantedpartitions with
+            | Over amount -> onaddoverallocation.Trigger(this,new PartitionErrorEventArgs(entry))
+            | _ -> partitions.Add(newentry)
+        do newentry |> isvalidname |> Option.bind(isduplicate) |> Option.iter(allocmeasure)
 
-        match isduplicate with
-        | true -> duplicatenames.Trigger(entry)
-        | false ->
-            match allocmeasure with
-            | Over as num -> overallocation.Trigger(num)
-            | Under as num -> partitions.Add(entry)// onunderallocation.Trigger(num) do modified event
-            | Exact -> partitions.Add(entry)
-
-    member this.Clear() = 
-        do
-            partitions |> Seq.iter(fun p -> p.Delete())
-            partitions.Clear()
-
-    member this.EvenPartition(onzeropartitions,onleftover,oneven) =
-        match Seq.length partitions with
-        | 0 -> do onzeropartitions
-        | _ -> 
-            let leftover = this.VPP.CodesRemaining % Seq.length partitions
-            let codeportion = this.VPP.CodesRemaining / Seq.length partitions
-            do partitions |> Seq.iter(fun p -> p.Allocation <- codeportion)
-            match leftover,codeportion with 
-            | _,0 -> () //Can't partition with more entries than there is codes
-            | 0,_ -> do partitions |> oneven
-            | l,_ -> do partitions |> onleftover (PartitionEntry("",l))
-
-    member this.Measure(onexact) =
+    member this.WriteToXLS(directorypath) =
         match measure' this.VPP partitions with
-        | Over as num -> overallocation.Trigger(abs num)
-        | Under as num -> onunderallocation.Trigger(abs num)
-        | Exact -> do onexact
-    
-    member this.Partition(directorypath,onerror:FileError) =
-        match measure' this.VPP partitions with
-        | Over as num -> overallocation.Trigger(abs num)
-        | Under as num -> onunderallocation.Trigger(abs num)
+        | Over amount -> onpartitionoverallocation.Trigger(this,new AllocationErrorEventArgs(amount))
+        | Under amount -> onpartitionunderallocation.Trigger(this,new AllocationErrorEventArgs(amount))
         | Exact -> 
             match partition partitions this.VPP with 
-            | Some(vpps) -> write directorypath vpps 
-            | None -> do onerror.Invoke(directorypath)
+            | Some(vpps) ->  vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directorypath,vpp.FileName + ".xls")))
+            | None -> () //Need to be refactored out
