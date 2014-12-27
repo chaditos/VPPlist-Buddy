@@ -18,14 +18,16 @@ let pathxlstemplate = Path.Combine(assetspath,"Template.xls")
 let basexls = xlsopenfile pathgoodvpp
 
 //Alert Delegates
-let onnonexistentfile = new FileError(fun path -> printfn "Error: File at %s does not exist." path)
-let onemptyworkbook = new FileError(fun path -> printfn "Error: XLS at %s seems to be empty." path)
-let onparsefailure = new FileError(fun path -> printfn "Error: Application could not parse XLS at %s" path)
-let oninvalidvpp = new Alert(fun () -> printfn "Error: XLS is not formatted as VPP Spreadsheet.")
-let onduplicatename = new PartitionError(fun (entry:PartitionEntry) -> printfn "Error: Name %s is repeated." entry.Name)
-let onunderallocation =  new AllocationError(fun num -> printfn "Error: Under-allocated by -%d" num)
-let onoverallocation = new AllocationError( fun num -> printfn "Error: Over-allocated y %d" num)
-let ondestinationerror = new FileError(fun path -> printfn "Error: Directory %s could not be written too." path)
+let onoverallocation = new AllocationError(fun obj args -> printfn "Error: Over allocated by %d." args.Amount)
+let onaddoverallocation = new AllocationError(fun obj args -> printfn "Error: Over allocated by added %d." args.Amount)
+let onduplicatename = new PartitionError(fun obj args -> printfn "Error: Name %s is repeated." args.PartitionEntry.Name )
+let oninvalidfilename = new PartitionError(fun ob args -> printfn "Error: Name %s contains invalid characters." args.PartitionEntry.Name)
+let onunderallocation =  new AllocationError(fun obj args -> printfn "Error: Under-allocated by %d" args.Amount)
+//let onnonexistentfile = new FileError(fun path -> printfn "Error: File at %s does not exist." path)
+//let onemptyworkbook = new FileError(fun path -> printfn "Error: XLS at %s seems to be empty." path)
+//let onparsefailure = new FileError(fun path -> printfn "Error: Application could not parse XLS at %s" path)
+//let oninvalidvpp = new Alert(fun () -> printfn "Error: XLS is not formatted as VPP Spreadsheet.")
+//let ondestinationerror = new FileError(fun path -> printfn "Error: Directory %s could not be written too." path)
 
 
 
@@ -39,7 +41,7 @@ let debugvppparser path = //Keep
     xlsopenfile path 
     |> Option.bind (xlsextractsheet' 0)
     |> Option.bind(xlsparsevpp) 
-
+(*
 let openxls path =
     let openxls = new OpenXLSWorkFlow ()
     openxls.OnNonExistentFile <- onnonexistentfile
@@ -51,18 +53,23 @@ let openxls path =
     match openxls.TryOpenVPP path with
     | true , partitioner -> printfn "good"
     | _ -> printfn "what happened?"
+*)
 
-
+let codes = [1..100] |> List.map(fun n -> {Code=n.ToString();URL=sprintf "apple.com/vpp/app/%d.html" n})
 let testpartitioner() =
-    let codes = [1..100] |> List.map(fun n -> {Code=n.ToString();URL=sprintf "apple.com/vpp/app/%d.html" n})
-    let vpp = {blankspreadsheet with VPPCodes = codes ; CodesRemaining = 100; CodesPurchased = 100; CodesRedeemed = 0}
+    let codeamount = List.length codes
+    let vpp = {randomvpp() with VPPCodes = codes ; CodesRemaining = codeamount; CodesPurchased = codeamount; CodesRedeemed = 0}
     let pw = PartitionWorkflow(vpp)
     do 
-        pw.OnDuplicateName.Add(onduplicatename.Invoke)
-        pw.OnOverAllocation.Add(onoverallocation.Invoke)
-        pw.OnUnderAllocation.Add(onunderallocation.Invoke)
-        pw.Add(new PartitionEntry("B128",90))
-        pw.Add(new PartitionEntry("B129",10))
-        pw.Partition(assetspath,fun path -> printfn "Could not write to %s" path)
-
+        pw.OnAddOverAllocation.AddHandler(onaddoverallocation)
+        pw.OnAddDuplicateName.AddHandler(onduplicatename)
+        pw.OnAddInvalidFileName.AddHandler(oninvalidfilename)
+        pw.OnPartitionOverAllocation.AddHandler(onoverallocation)
+        pw.OnPartitionUnderAllocation.AddHandler(onunderallocation)
+        pw.Add(new PartitionEntry("B128",101))
+        pw.Add(new PartitionEntry("B129",1))
+        pw.Add(new PartitionEntry("B12",30))
+        pw.Add(new PartitionEntry("B12",30))
+        pw.WriteToXLS(assetspath)
+    
   
