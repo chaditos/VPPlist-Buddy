@@ -1,5 +1,5 @@
 ﻿#load "Debug NPOI.fsx"
-#I "../bin/Debug/"
+#I "../bin/Release/"
 #r "VPPList-Buddy.dll"
 
 open System
@@ -19,14 +19,23 @@ let basexls = xlsopenfile pathgoodvpp
 
 //Alert Delegates
 let onoverallocation = new AllocationError(fun obj args -> printfn "Error: Over allocated by %d." args.Amount)
-let onaddoverallocation = new AllocationError(fun obj args -> printfn "Error: Over allocated by added %d." args.Amount)
+let onaddoverallocation = new EntryAllocationError(fun obj args -> printfn "Error: Over allocated by added %d." args.Amount)
 let onduplicatename = new PartitionError(fun obj args -> printfn "Error: Name %s is repeated." args.PartitionEntry.Name )
 let oninvalidfilename = new PartitionError(fun ob args -> printfn "Error: Name %s contains invalid characters." args.PartitionEntry.Name)
 let onunderallocation =  new AllocationError(fun obj args -> printfn "Error: Under-allocated by %d" args.Amount)
-//let onnonexistentfile = new FileError(fun path -> printfn "Error: File at %s does not exist." path)
-//let onemptyworkbook = new FileError(fun path -> printfn "Error: XLS at %s seems to be empty." path)
-//let onparsefailure = new FileError(fun path -> printfn "Error: Application could not parse XLS at %s" path)
-//let oninvalidvpp = new Alert(fun () -> printfn "Error: XLS is not formatted as VPP Spreadsheet.")
+let onnonexistentfile = new FileError(fun path -> printfn "Error: File at %s does not exist." path)
+let onemptyworkbook = new FileError(fun path -> printfn "Error: XLS at %s seems to be empty." path)
+let onparsefailure = new FileError(fun path -> printfn "Error: Application could not parse XLS at %s" path)
+let oninvalidvpp = new Alert(fun () -> printfn "Error: XLS is not formatted as VPP Spreadsheet.")
+let oninvalidpartitionsheet = new Alert(fun () -> printfn "Error: There is no partitionsheet")
+let partionersetup = 
+    new PartitionWorkflowSetup( fun pw ->
+        pw.OnAddOverAllocation.AddHandler(onaddoverallocation)
+        pw.OnAddDuplicateName.AddHandler(onduplicatename)
+        pw.OnAddInvalidFileName.AddHandler(oninvalidfilename)
+        pw.OnPartitionOverAllocation.AddHandler(onoverallocation)
+        pw.OnPartitionUnderAllocation.AddHandler(onunderallocation)
+    )
 //let ondestinationerror = new FileError(fun path -> printfn "Error: Directory %s could not be written too." path)
 
 
@@ -41,19 +50,6 @@ let debugvppparser path = //Keep
     xlsopenfile path 
     |> Option.bind (xlsextractsheet' 0)
     |> Option.bind(xlsparsevpp) 
-(*
-let openxls path =
-    let openxls = new OpenXLSWorkFlow ()
-    openxls.OnNonExistentFile <- onnonexistentfile
-    openxls.OnInvalidVPP <- oninvalidvpp
-    openxls.OnParseFailure <- onparsefailure
-    openxls.OnEmptyWorkbook <- onemptyworkbook
-    //openxls.OnInvalidPartitionSheet <- on
-
-    match openxls.TryOpenVPP path with
-    | true , partitioner -> printfn "good"
-    | _ -> printfn "what happened?"
-*)
 
 let codes = [1..100] |> List.map(fun n -> {Code=n.ToString();URL=sprintf "apple.com/vpp/app/%d.html" n})
 let testpartitioner() =
@@ -69,7 +65,19 @@ let testpartitioner() =
         pw.Add(new PartitionEntry("B128",101))
         pw.Add(new PartitionEntry("B129",1))
         pw.Add(new PartitionEntry("B12",30))
-        pw.Add(new PartitionEntry("B12",30))
+        pw.Add(new PartitionEntry("B12&*",30))
         pw.WriteToXLS(assetspath)
     
+let openxls path =
+    let openxls = new OpenXLSWorkFlow ()
+    do
+        openxls.OnEmptyWorkbook <- onemptyworkbook
+        openxls.OnInvalidPartitionSheet <- oninvalidpartitionsheet
+        openxls.OnInvalidVPP <- oninvalidvpp
+        openxls.OnNonExistentFile <- onnonexistentfile
+        openxls.OnParseFailure <- onparsefailure
+    match openxls.TryOpenVPP(path,partionersetup) with
+    | true , partitioner -> printfn "good"
+    | _ -> () //errors should have been handled.
+
   

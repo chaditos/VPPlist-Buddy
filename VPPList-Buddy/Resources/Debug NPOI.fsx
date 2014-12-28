@@ -1,4 +1,4 @@
-﻿#I "../bin/Debug/"
+﻿#I "../bin/Release/"
 #r "NPOI.dll"
 #r "VPPList-Buddy.dll"
 

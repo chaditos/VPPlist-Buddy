@@ -20,11 +20,18 @@ type public PartitionEntry(name:string,allocation:int) =
         with get() = allocation
         and set(value) = allocation <- value
 
+type DirectoryChooser = delegate of unit -> string
 //.Net Friendly Events
 type AllocationErrorEventArgs(Amount:int) =
     inherit EventArgs()
     member this.Amount = Amount
 type AllocationError = delegate of obj * AllocationErrorEventArgs -> unit
+
+type EntryAllocationErrorEventArgs(Amount:int,Entry:PartitionEntry) =
+    inherit EventArgs()
+    member this.Amount = Amount
+    member this.Entry = Entry
+type EntryAllocationError = delegate of obj * EntryAllocationErrorEventArgs -> unit
 
 type PartitionErrorEventArgs(Entry:PartitionEntry) =
     inherit EventArgs()
@@ -36,13 +43,13 @@ type public PartitionWorkflow (VPP:VPP) =
 
     let onaddduplicatename = new Event<PartitionError,PartitionErrorEventArgs>()
     let onaddinvalidfilename = new Event<PartitionError,PartitionErrorEventArgs>()
-    let onaddoverallocation = new Event<AllocationError,AllocationErrorEventArgs>()
+    let onaddoverallocation = new Event<EntryAllocationError,EntryAllocationErrorEventArgs>()
     let onpartitionunderallocation = new Event<AllocationError,AllocationErrorEventArgs>()
     let onpartitionoverallocation = new Event<AllocationError,AllocationErrorEventArgs>()
 
     let partitions = Collections.Generic.List<PartitionEntry>()
     let invaliddirchars = Set.ofArray (Path.GetInvalidPathChars())
-    let invalidfilechars = Set.ofArray (Path.GetInvalidPathChars())
+    let invalidfilechars = Set.ofArray (Path.GetInvalidFileNameChars())
 
     let measure' (vpp:VPP) (partitions:seq<PartitionEntry>)  =
         let totalcodes = vpp.CodesRemaining
@@ -102,11 +109,17 @@ type public PartitionWorkflow (VPP:VPP) =
         let allocmeasure (entry:PartitionEntry) =
             let wantedpartitions = Seq.singleton entry |> Seq.append partitions
             match measure' this.VPP wantedpartitions with
-            | Over amount -> do onaddoverallocation.Trigger(this,new AllocationErrorEventArgs(amount))
+            | Over amount -> do onaddoverallocation.Trigger(this,new EntryAllocationErrorEventArgs(amount,entry))
             | _ -> partitions.Add(newentry)
         do newentry |> isvalidname |> Option.bind(isduplicate) |> Option.iter(allocmeasure)
 
     member this.WriteToXLS(directorypath) =
         match trypartition partitions this.VPP with 
         | Some(vpps) ->  vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directorypath,vpp.FileName + ".xls")))
+        | None -> () //Need to be refactored out
+    member this.WriteToXLS(directorychooser:DirectoryChooser) =
+        match trypartition partitions this.VPP with 
+        | Some(vpps) -> 
+            let directorypath = directorychooser.Invoke()
+            vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directorypath,vpp.FileName + ".xls")))
         | None -> () //Need to be refactored out

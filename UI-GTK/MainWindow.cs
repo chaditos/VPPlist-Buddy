@@ -39,9 +39,33 @@ public partial class MainWindow: Gtk.Window
 	//Actual Program
 	public void OpenVPPPartition(string Path) {
 		PartitionWorkflow partitioner;
-		if (XLSParser.TryOpenVPP (Path, out partitioner)) {
-			Console.WriteLine("Success!");
+		PartitionError onduplicateentry = delegate(object o, PartitionErrorEventArgs args) {
+			var message = String.Format ("Entry with name {0} and amount {1}", args.PartitionEntry.Name, args.PartitionEntry.Allocation);
+			AlertDialog (message);
+		};
+		PartitionError oninvalidfilename = delegate(object o, PartitionErrorEventArgs args) {
+			var message = String.Format ("Entry with name {0} and amount {1}", args.PartitionEntry.Name, args.PartitionEntry.Allocation);
+			AlertDialog (message);
+		};
+		EntryAllocationError onaddoverallocation = delegate(object o, EntryAllocationErrorEventArgs args) {
+			var message = String.Format("Entry (Name:{0} , Amount:{1}) was not added as it over allocates the codes by {2}",args.Entry.Name,args.Entry.Allocation,args.Amount);
+			AlertDialog(message);
+		};
+		AllocationError onunderallocation = delegate(object o, AllocationErrorEventArgs args) {
+			var message = String.Format("There are still {0} codes left to be allocated.",args.Amount);
+			AlertDialog(message);
+		};
+		PartitionWorkflowSetup errorhandling = delegate(PartitionWorkflow pw) {
+			pw.OnAddDuplicateName += onduplicateentry;
+			pw.OnAddInvalidFileName += oninvalidfilename;
+			pw.OnAddOverAllocation += onaddoverallocation;
+			//pw.OnPartitionOverAllocation <- This shouldn't actually be called as the code won't let it.
+			pw.OnPartitionUnderAllocation += onunderallocation;
+		};
+		if (XLSParser.TryOpenVPP (Path, errorhandling, out partitioner)) {
+			partitioner.WriteToXLS (SaveFolderChooser);
 		}
+		// else nothing will be called
 	}
 	public string SaveFolderChooser()
 	{
