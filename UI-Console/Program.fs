@@ -1,5 +1,5 @@
-﻿// Learn more about F# at http://fsharp.net
-// See the 'F# Tutorial' project for more help.
+//Compile errors. Should note that this is to test features, not actually implement a pipeable shell application.
+//Will propbably take off main branch soon.
 
 open System
 open VPPListBuddy.Workflow
