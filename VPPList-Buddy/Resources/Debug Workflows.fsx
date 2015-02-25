@@ -51,7 +51,7 @@ let debugvppparser path = //Keep
     |> Option.bind (xlsextractsheet' 0)
     |> Option.bind(xlsparsevpp) 
 
-let codes = [1..100] |> List.map(fun n -> {Code=n.ToString();URL=sprintf "apple.com/vpp/app/%d.html" n})
+let codes = [1..500] |> List.map(fun n -> {Code=n.ToString();URL=sprintf "apple.com/vpp/app/%d.html" n})
 let testpartitioner() =
     let codeamount = List.length codes
     let vpp = {randomvpp() with VPPCodes = codes ; CodesRemaining = codeamount; CodesPurchased = codeamount; CodesRedeemed = 0}
@@ -62,13 +62,14 @@ let testpartitioner() =
         pw.OnAddInvalidFileName.AddHandler(oninvalidfilename)
         pw.OnPartitionOverAllocation.AddHandler(onoverallocation)
         pw.OnPartitionUnderAllocation.AddHandler(onunderallocation)
-        pw.Add(new PartitionEntry("B128",101))
-        pw.Add(new PartitionEntry("B129",1))
-        pw.Add(new PartitionEntry("B12",30))
-        pw.Add(new PartitionEntry("B12&*",30))
+        pw.Add(new PartitionEntry("Sheet 1",100))
+        pw.Add(new PartitionEntry("Sheet 2",100))
+        pw.Add(new PartitionEntry("Sheet 3",100))
+        pw.Add(new PartitionEntry("Sheet 4",100))
+        pw.Add(new PartitionEntry("Sheet 5",100))
         pw.WriteToXLS(assetspath)
     
-let openxls path =
+let openvpp path =
     let openxls = new OpenXLSWorkFlow ()
     do
         openxls.OnEmptyWorkbook <- onemptyworkbook
@@ -77,7 +78,16 @@ let openxls path =
         openxls.OnNonExistentFile <- onnonexistentfile
         openxls.OnParseFailure <- onparsefailure
     match openxls.TryOpenVPP(path,partionersetup) with
-    | true , partitioner -> printfn "good"
-    | _ -> () //errors should have been handled.
+    | true , partitioner -> Some partitioner.VPP
+    | _ -> None 
+//Finish testing and whatever
+let generateitunessheet vpps =
+    let sheet = xlsworksheet "Sheet 1"
+    let extract (vpp:VPP) = vpp.FileName , (List.head vpp.AvailableVPPCodes).URL
+    let writeentry vindex = 
+        let write = xlswritetext sheet
+        extract >> fun (name,url) -> do write (vindex,0) name ; write (vindex,1) url
+    vpps |> Seq.iteri(fun i vpp -> writeentry i vpp)
 
-  
+let getsheets = 
+    [1..5] |> Seq.map (fun n -> (Path.Combine(assetspath,sprintf "Sheet %d.xls" n))) 

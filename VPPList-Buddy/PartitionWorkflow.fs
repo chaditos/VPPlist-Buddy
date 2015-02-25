@@ -84,6 +84,15 @@ type public PartitionWorkflow (VPP:VPP) =
             None
         | Exact -> Some (f vpp.AvailableVPPCodes (allocsaslist.Force()) [])
 
+    //marks vpp because you have to redeem a code or something
+    //make better in future?
+    let toconsumablevpp (vpp:VPP) =
+        let consumablecodes =
+            List.head vpp.VPPCodes
+            |> fun first -> {first with URL="redeemed"}
+            |> fun w ->  w :: (List.tail vpp.VPPCodes)
+        let remaining = vpp.CodesRemaining - 1
+        {vpp with VPPCodes=consumablecodes;CodesRedeemed=1;CodesRemaining=remaining}
     //Events
     [<CLIEvent>] member this.OnAddDuplicateName = onaddduplicatename.Publish
     [<CLIEvent>] member this.OnAddInvalidFileName = onaddinvalidfilename.Publish
@@ -92,7 +101,7 @@ type public PartitionWorkflow (VPP:VPP) =
     [<CLIEvent>] member this.OnPartitionOverAllocation = onpartitionoverallocation.Publish
 
     member this.VPP = VPP
-
+    //Adds partition entry objects. Mainly for interactive contexts.
     member this.Add(newentry) =
         let isvalidname (entry:PartitionEntry) = 
             match entry.Name.ToCharArray()|> Set.ofArray |> Set.intersect invalidfilechars |> Set.isEmpty with
@@ -112,14 +121,16 @@ type public PartitionWorkflow (VPP:VPP) =
             | Over amount -> do onaddoverallocation.Trigger(this,new EntryAllocationErrorEventArgs(amount,entry))
             | _ -> partitions.Add(newentry)
         do newentry |> isvalidname |> Option.bind(isduplicate) |> Option.iter(allocmeasure)
-
+    //Writes to a directory only if the partitions checkout
     member this.WriteToXLS(directorypath) =
         match trypartition partitions this.VPP with 
-        | Some(vpps) ->  vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directorypath,vpp.FileName + ".xls")))
+        | Some(vpps) ->  vpps |> Seq.map(toconsumablevpp) |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directorypath,vpp.FileName + ".xls")))
         | None -> () //Need to be refactored out
+    //Prompts the user to input a directory if the partitions checkout.
+    //handle null with directory
     member this.WriteToXLS(directorychooser:DirectoryChooser) =
         match trypartition partitions this.VPP with 
         | Some(vpps) -> 
             let directorypath = directorychooser.Invoke()
-            vpps |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directorypath,vpp.FileName + ".xls")))
+            vpps |> Seq.map(toconsumablevpp) |> Seq.iter(fun vpp -> savevpptoxls vpp (Path.Combine(directorypath,vpp.FileName + ".xls")))
         | None -> () //Need to be refactored out

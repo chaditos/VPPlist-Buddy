@@ -2,4 +2,7 @@
   <Task file="" description="Rewrite readcell to return Option instead of null" completed="True" />
   <Task file="" description="debug writing cells to see what calls are neessary." />
   <Task file="" description="Research old xlssaveworksheet and it's failure to generate files." />
+  <Task file="" description="add delete/clear functions when doing gui" />
+  <Task file="" description="reimplement PartitionEntry events (modified and eelte tc.))when required" />
+  <Task file="" description="Don't use null in event calls? Even though I wont use them" />
 </ListOfTask>

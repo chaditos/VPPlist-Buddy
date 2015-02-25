@@ -8,7 +8,7 @@ open NPOI.HSSF
 open NPOI.HSSF.UserModel
 open NPOI.SS.UserModel
 
-let xlstestempty (xls:IWorkbook) = if xls.NumberOfSheets = 0 then None else Some(xls)
+let xlstestempty (wb:IWorkbook) = if wb.NumberOfSheets = 0 then None else Some(wb)
 
 let xlsopenfile path =
     use fs = path |> File.OpenRead
@@ -17,12 +17,11 @@ let xlsopenfile path =
     with
     | ex  -> None
 
-
-let attachsheet sheet (wb : IWorkbook) =
-    do wb.Add(sheet)
+let attachsheet ws (wb : IWorkbook) =
+    do wb.Add(ws)
     wb
 
-let xlsworksheet name = //Not specifically an xls worksheet, but doesn't matter for this application
+let xlsworksheet name = //Test if can make a generic sheet
     let wb = new HSSFWorkbook()
     let ws = wb.CreateSheet() //All sheets need to be attached to a workbook I suppose?
     do wb.SetSheetName(0,name)
@@ -110,9 +109,6 @@ let mapvppdatacell (spreadsheet : VPP) =
     |> List.collect(fun (code,url) -> [code;url])
     |> List.append vppdata
 
-(*let xlswritecell (sheet : HSSFSheet) (index : int * int) (obj:Object)  = 
-    //do index |> fun (h,v) -> sheet.Cells.Item(h,v) <- new Cell(obj) //How safe is this?*)
-
 let xlswritetext (sheet : ISheet) (index : int * int) (text:string) =
     let (v,h) = fst index , snd index
     match sheet.GetRow(v) with
@@ -121,21 +117,11 @@ let xlswritetext (sheet : ISheet) (index : int * int) (text:string) =
              | null -> do row.CreateCell(h).SetCellValue(text)
              | cell -> do cell.SetCellValue(text)
 
-   
-
 let xlssaveworksheet (path : string) (ws : ISheet) =
     use fs = File.Create(path)
     do ws.Workbook.Write(fs)
 
-(* 
-The following fails, but should work? Not efficient, but should work
-let xlssaveworksheet (path : string) (ws : ISheet) =
-    use fs = File.Create(path)
-    let wb = new HSSFWorkbook()
-    do 
-        wb.Add(ws)
-        wb.Write(fs)
-*)
+
 let xlssaveworkbook (path : string) (wb : IWorkbook)  = 
     use fs = File.Create(path)
     wb.Write(fs)
@@ -145,3 +131,18 @@ let savevpptoxls vpp path =
     let write = 
         fun xlsserializer -> savespreadsheet (xlsworksheet "Sheet1") xlswritetext xlsserializer mapvppdatacell
     write xlsserializer vpp
+
+(*
+
+let xlswritecell (sheet : HSSFSheet) (index : int * int) (obj:Object)  = 
+    do index |> fun (h,v) -> sheet.Cells.Item(h,v) <- new Cell(obj) //How safe is this?
+
+//The following fails, but should work? Not efficient, but should work
+
+let xlssaveworksheet (path : string) (ws : ISheet) =
+    use fs = File.Create(path)
+    let wb = new HSSFWorkbook()
+    do 
+        wb.Add(ws)
+        wb.Write(fs)
+*)

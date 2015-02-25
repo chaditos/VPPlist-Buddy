@@ -12,4 +12,4 @@ let savespreadsheet serializer cellwriter filewriter vppcellmap (vppsheet:VPP) =
     let writevpp spreadsheet =  vppcellmap spreadsheet |> List.iter(fun (h:int,v:int,text:string) -> writecell (h,v) text)
     do 
         writevpp vppsheet
-        filewriter serializer //filewriter would already be checked for write capability and only need serializer
+        filewriter serializer //filewriter should already be checked for write capability and only need serializer
