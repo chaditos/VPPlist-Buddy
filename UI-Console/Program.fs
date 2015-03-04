@@ -42,7 +42,7 @@ let main argv =
             match openworkflow.TryOpenVPP(file,partitionersetup) with
             | true, partitioner -> 
                 do 
-                    printfn "Success: VPP file %s was partitioned to directory %s" file dest
+                    partitioner.WriteToXLS(dest)
             | _ -> () 
         | _ -> printfn "Error: This program takes 2 arguments, a source file and destination directory."
     0
