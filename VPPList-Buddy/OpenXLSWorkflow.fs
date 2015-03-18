@@ -8,10 +8,6 @@ open VPPListBuddy.VPP
 open VPPListBuddy.IO
 open VPPListBuddy.XLS
 
-type Alert = delegate of unit -> unit
-type FileError = delegate of string -> unit
-type PartitionWorkflowSetup = delegate of PartitionWorkflow -> unit
-
 type OpenXLSWorkFlow() =
     //Default alert delegates that do nothing.
     let mutable onnonexistentfile = new FileError(fun path -> ())
@@ -25,27 +21,27 @@ type OpenXLSWorkFlow() =
     let openworkbook path =
         let filealert (alert:FileError) option = match option with | Some _ -> option | None -> (do alert.Invoke(path)); None
         checkinteropnull path
-        |> Option.bind (fun path -> fileexists path |> filealert onnonexistentfile)
-        |> Option.bind (fun path -> xlsopenfile path |> filealert onparsefailure)
-        |> Option.bind (fun workbook -> xlstestempty workbook |> filealert onemptyworkbook)
+        |> Option.bind (fileexists >> filealert onnonexistentfile)
+        |> Option.bind (xlsopenfile >> filealert onparsefailure)
+        |> Option.bind (xlstestempty >> filealert onemptyworkbook)
 
     let openworksheet = xlsextractsheet'
 
     let openworksheet' = xlsextractsheet
 
-    let parsevppsheet = xlsparsevpp >> (fun vpp -> match vpp with | Some _ -> vpp | None -> (do oninvalidvpp.Invoke()); None)
+    let parsevppsheet = xlsparsevpp >> function | Some vpp -> Some vpp | None -> (do oninvalidvpp.Invoke()); None
 
-    let parsepartitionsheet vppspreadsheet =
-        let read, readint = vppspreadsheet |> xlstrystring, vppspreadsheet |> xlstryint
+    let parsepartitionsheet spreadsheet =
+        let read, readint = xlstrystring spreadsheet, xlstryint spreadsheet
         let rec readlines start acc =
             (start, 0, start, 1)
             |> fun (v1, h1, v2, h2) ->
                 match read (v1,h1) , readint (v2,h2) with
-                | None, Some(allocation:int) -> None
-                | Some(partition), None -> None
-                | Some(partition:string),Some(allocation:int) -> readlines (start + 1) ((partition,allocation) :: acc)
-                | None, None when start = 0 -> None
-                | _ -> Some(acc |> List.rev)
+                | None, None when start = 0 -> None //No partitions entered
+                | None, Some(_) -> None //No partition name in row
+                | Some(_), None -> None //No url in row
+                | Some(namedpartition),Some(allocation) -> readlines (start + 1) ((namedpartition,allocation) :: acc)
+                | None,None -> Some(List.rev acc) //Finished reading list, return
         readlines 0 []
 
     //Setable Error Warning Delegates

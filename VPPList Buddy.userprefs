@@ -1,5 +1,5 @@
-﻿<Properties StartupItem="VPPList-Buddy\VPPList-Buddy.fsproj" GitUserInfo="UsingGIT">
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
+﻿<Properties StartupItem="VPPList-Buddy/VPPList-Buddy.fsproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
   <MonoDevelop.Ide.Workbench />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
