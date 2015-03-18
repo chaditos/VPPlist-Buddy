@@ -21,6 +21,7 @@
     </PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
@@ -58,6 +59,9 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <None Include="packages.config" />
+    <Compile Include="VPP.fs" />
+    <Compile Include="IO.fs" />
+    <Compile Include="XLS.fs" />
     <Compile Include="PartitionWorkflow.fs" />
     <Compile Include="OpenXLSWorkflow.fs" />
     <None Include="Resources\Incorrect Totals.xls" />
@@ -65,8 +69,6 @@
     <None Include="Resources\Debug NPOI.fsx" />
     <None Include="Resources\Debug Workflows.fsx" />
     <None Include="Resources\Not an XLS.xls" />
-    <Compile Include="IO.fs" />
-    <Compile Include="XLS.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.1\Framework\v4.0\Microsoft.FSharp.Targets" />
   <ItemGroup>

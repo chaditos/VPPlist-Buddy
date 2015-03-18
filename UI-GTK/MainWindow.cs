@@ -11,29 +11,6 @@ public partial class MainWindow: Gtk.Window
 		messagedialog.Response += (o, args) => messagedialog.Destroy();
 		messagedialog.Run ();
 	}
-	private PartitionError onduplicateentry = delegate(object o, PartitionErrorEventArgs args) {
-		var message = String.Format ("Entry with name {0} and amount {1}", args.PartitionEntry.Name, args.PartitionEntry.Allocation);
-		AlertDialog (message);
-	};
-	private PartitionError oninvalidfilename = delegate(object o, PartitionErrorEventArgs args) {
-		var message = String.Format ("Entry with name {0} and amount {1}", args.PartitionEntry.Name, args.PartitionEntry.Allocation);
-		AlertDialog (message);
-	};
-	private EntryAllocationError onaddoverallocation = delegate(object o, EntryAllocationErrorEventArgs args) {
-		var message = String.Format("Entry (Name:{0} , Amount:{1}) was not added as it over allocates the codes by {2}",args.Entry.Name,args.Entry.Allocation,args.Amount);
-		AlertDialog(message);
-	};
-	private AllocationError onunderallocation = delegate(object o, AllocationErrorEventArgs args) {
-		var message = String.Format("There are still {0} codes left to be allocated.",args.Amount);
-		AlertDialog(message);
-	};
-	PartitionWorkflowSetup partitionererrorhandling = delegate(PartitionWorkflow pw) {
-		pw.OnAddDuplicateName += onduplicateentry;
-		pw.OnAddInvalidFileName += oninvalidfilename;
-		pw.OnAddOverAllocation += onaddoverallocation;
-		//pw.OnPartitionOverAllocation <- This shouldn't actually be called as the code won't let it.
-		pw.OnPartitionUnderAllocation += onunderallocation;
-	};
 	//Setup Drag Drop and OpenXLSWorkflow
 	public TargetEntry [] targettable = new TargetEntry[] {new TargetEntry("text/uri-list",0,0)};
 	public OpenXLSWorkFlow XLSParser = new OpenXLSWorkFlow();
@@ -62,7 +39,30 @@ public partial class MainWindow: Gtk.Window
 	//Actual Program
 	public void OpenVPPPartition(string Path) {
 		PartitionWorkflow partitioner;
-		if (XLSParser.TryOpenVPP (Path, partitionererrorhandling, out partitioner)) {
+		PartitionError onduplicateentry = delegate(object o, PartitionErrorEventArgs args) {
+			var message = String.Format ("Entry with name {0} and amount {1}", args.PartitionEntry.Name, args.PartitionEntry.Allocation);
+			AlertDialog (message);
+		};
+		PartitionError oninvalidfilename = delegate(object o, PartitionErrorEventArgs args) {
+			var message = String.Format ("Entry with name {0} and amount {1}", args.PartitionEntry.Name, args.PartitionEntry.Allocation);
+			AlertDialog (message);
+		};
+		EntryAllocationError onaddoverallocation = delegate(object o, EntryAllocationErrorEventArgs args) {
+			var message = String.Format("Entry (Name:{0} , Amount:{1}) was not added as it over allocates the codes by {2}",args.Entry.Name,args.Entry.Allocation,args.Amount);
+			AlertDialog(message);
+		};
+		AllocationError onunderallocation = delegate(object o, AllocationErrorEventArgs args) {
+			var message = String.Format("There are still {0} codes left to be allocated.",args.Amount);
+			AlertDialog(message);
+		};
+		PartitionWorkflowSetup errorhandling = delegate(PartitionWorkflow pw) {
+			pw.OnAddDuplicateName += onduplicateentry;
+			pw.OnAddInvalidFileName += oninvalidfilename;
+			pw.OnAddOverAllocation += onaddoverallocation;
+			//pw.OnPartitionOverAllocation <- This shouldn't actually be called as the code won't let it.
+			pw.OnPartitionUnderAllocation += onunderallocation;
+		};
+		if (XLSParser.TryOpenVPP (Path, errorhandling, out partitioner)) {
 			partitioner.WriteToXLS (SaveFolderChooser);
 		}
 		// else nothing will be called

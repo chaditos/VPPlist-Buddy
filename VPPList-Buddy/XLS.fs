@@ -8,8 +8,6 @@ open NPOI.HSSF
 open NPOI.HSSF.UserModel
 open NPOI.SS.UserModel
 
-//Discriminated union of cell values from the cell. Probably not here, but further down.
-
 let xlstestempty (wb:IWorkbook) = if wb.NumberOfSheets = 0 then None else Some(wb)
 
 let xlsopenfile path =
@@ -51,9 +49,9 @@ let xlstryint ws =
         | (false,_) -> None
     | None -> None
 
-let parsevppspreadsheet cellintreader cellreader = //need to verify spreadsheet
-    let trytext cell = match cellreader cell with | Some(text) -> text | None -> ""
+let parsevppspreadsheet cellintreader (cellreader :  int * int -> string option) = //need to verify spreadsheet
     let tryint cell = match cellintreader cell with | Some(int') -> int' | None -> 0
+    let trytext cell = match cellreader cell with | Some(text) -> text | None -> ""
     let extractinfo vpp =
         vpp 
         |> fun vpp -> {vpp with ProductType = trytext (0,8)}

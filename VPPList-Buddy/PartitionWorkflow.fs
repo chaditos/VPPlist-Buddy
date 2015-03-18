@@ -20,6 +20,7 @@ type public PartitionEntry(name:string,allocation:int) =
         with get() = allocation
         and set(value) = allocation <- value
 
+type DirectoryChooser = delegate of unit -> string
 //.Net Friendly Events
 type AllocationErrorEventArgs(Amount:int) =
     inherit EventArgs()
